@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import viewsets
 from .serializers import PostSerializer,UserSerializer
+from django.views.decorators.csrf import csrf_exempt
 from .models import Post
 
 
@@ -41,19 +42,25 @@ class Userview(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def retrieve(self, request, pk=None):
-        user = get_object_or_404(self.queryset, pk=pk)
-        serializer = UserSerializer(user)
-        return Response(serializer.data)
+        try:
+            user = get_object_or_404(self.queryset, pk=pk)
+            serializer = UserSerializer(user)
+            return Response(serializer.data)
+        except:
+            return Response({'message':'user not found'},status=401)
 
     def destroy(self, request, pk=None):
-        user = get_object_or_404(self.queryset, pk=pk)
-        user.delete()
-        return Response(status=200)
-
+        try:
+            user = get_object_or_404(self.queryset, pk=pk)
+            user.delete()
+            return Response({'message':'user deleted'},status=200)
+        except:
+            return Response({'message':'user not found'})
+@csrf_exempt
 def login(request):
     if request.method == 'POST':
         user = authenticate(username=request.POST.get('username'),password=request.POST.get('password'))
         if user:
-            return JsonResponse({'message':user},status=200)
+            return JsonResponse({'message':user.username},status=200)
         return JsonResponse({'message':'user not found'},status=200)
     return HttpResponse('method not allowed')
